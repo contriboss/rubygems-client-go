@@ -3,6 +3,7 @@
 package rubygemsclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -63,7 +64,12 @@ func (c *Client) GetGemInfo(name, version string) (*GemInfo, error) {
 	// In production, we'd use the compact index or version-specific APIs
 	url := fmt.Sprintf("%s/gems/%s.json", c.baseURL, name)
 
-	resp, err := c.httpClient.Get(url)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch gem info: %w", err)
 	}
@@ -94,7 +100,12 @@ type VersionInfo struct {
 func (c *Client) GetGemVersions(name string) ([]string, error) {
 	url := fmt.Sprintf("%s/versions/%s.json", c.baseURL, name)
 
-	resp, err := c.httpClient.Get(url)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch gem versions: %w", err)
 	}
@@ -165,4 +176,3 @@ func (c *Client) GetMultipleGemInfo(requests []GemInfoRequest) []GemInfoResult {
 	wg.Wait()
 	return results
 }
-
