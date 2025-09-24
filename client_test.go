@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
 )
 
 func TestNewClient(t *testing.T) {
@@ -50,7 +49,7 @@ func TestGetGemInfo_Success(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -117,7 +116,7 @@ func TestGetGemVersions_Success(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(versions)
+		_ = json.NewEncoder(w).Encode(versions)
 	}))
 	defer server.Close()
 
@@ -152,7 +151,7 @@ func TestGetGemVersions_TooManyVersions(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(versions)
+		_ = json.NewEncoder(w).Encode(versions)
 	}))
 	defer server.Close()
 
@@ -186,7 +185,7 @@ func TestGetMultipleGemInfo(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -233,4 +232,3 @@ func contains(s, substr string) bool {
 	return len(s) >= len(substr) && s[:len(substr)] == substr ||
 		(len(s) > len(substr) && contains(s[1:], substr))
 }
-
