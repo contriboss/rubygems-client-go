@@ -39,6 +39,16 @@ type Dependency struct {
 
 // NewClient creates a new RubyGems.org API client with connection pooling
 func NewClient() *Client {
+	return NewClientWithBaseURL("https://rubygems.org")
+}
+
+// NewClientWithBaseURL creates a client for a custom gem server
+func NewClientWithBaseURL(baseURL string) *Client {
+	// Ensure baseURL doesn't end with /
+	if baseURL != "" && baseURL[len(baseURL)-1] == '/' {
+		baseURL = baseURL[:len(baseURL)-1]
+	}
+
 	// Create HTTP transport with connection pooling
 	transport := &http.Transport{
 		MaxIdleConns:          100,
@@ -50,7 +60,7 @@ func NewClient() *Client {
 	}
 
 	return &Client{
-		baseURL: "https://rubygems.org/api/v1",
+		baseURL: baseURL + "/api/v1",
 		httpClient: &http.Client{
 			Timeout:   30 * time.Second,
 			Transport: transport,
