@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -98,7 +99,7 @@ func TestGetGemInfo_NotFound(t *testing.T) {
 	}
 
 	expectedErr := "RubyGems API returned status 404"
-	if !contains(err.Error(), expectedErr) {
+	if !strings.Contains(err.Error(), expectedErr) {
 		t.Errorf("Expected error to contain '%s', got %s", expectedErr, err.Error())
 	}
 }
@@ -175,9 +176,9 @@ func TestGetMultipleGemInfo(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simple mock that returns different responses based on gem name
 		var response GemInfo
-		if contains(r.URL.Path, "gem1") {
+		if strings.Contains(r.URL.Path, "gem1") {
 			response = GemInfo{Name: "gem1", Version: "1.0.0"}
-		} else if contains(r.URL.Path, "gem2") {
+		} else if strings.Contains(r.URL.Path, "gem2") {
 			response = GemInfo{Name: "gem2", Version: "2.0.0"}
 		} else {
 			w.WriteHeader(http.StatusNotFound)
@@ -225,10 +226,4 @@ func TestGetMultipleGemInfo(t *testing.T) {
 	if results[2].Error == nil {
 		t.Error("Expected nonexistent gem to fail")
 	}
-}
-
-// Helper function to check if string contains substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && s[:len(substr)] == substr ||
-		(len(s) > len(substr) && contains(s[1:], substr))
 }

@@ -166,21 +166,18 @@ func (c *Client) GetMultipleGemInfo(requests []GemInfoRequest) []GemInfoResult {
 	semaphore := make(chan struct{}, 10) // Max 10 concurrent requests
 
 	for i, req := range requests {
-		wg.Add(1)
-		go func(index int, request GemInfoRequest) {
-			defer wg.Done()
-
+		wg.Go(func() {
 			// Acquire semaphore
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
-			info, err := c.GetGemInfo(request.Name, request.Version)
-			results[index] = GemInfoResult{
-				Request: request,
+			info, err := c.GetGemInfo(req.Name, req.Version)
+			results[i] = GemInfoResult{
+				Request: req,
 				Info:    info,
 				Error:   err,
 			}
-		}(i, req)
+		})
 	}
 
 	wg.Wait()
