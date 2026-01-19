@@ -14,8 +14,19 @@ import (
 // Client provides access to RubyGems.org API.
 // Ruby equivalent: Gem::RemoteFetcher
 type Client struct {
-	baseURL    string
-	httpClient *http.Client
+	baseURL     string
+	httpClient  *http.Client
+	credentials *Credentials
+}
+
+// ClientOption configures a Client.
+type ClientOption func(*Client)
+
+// WithCredentials sets credentials for authenticating with the gem server.
+func WithCredentials(creds *Credentials) ClientOption {
+	return func(c *Client) {
+		c.credentials = creds
+	}
 }
 
 // GemInfo represents gem metadata from RubyGems.org
@@ -38,12 +49,12 @@ type Dependency struct {
 }
 
 // NewClient creates a new RubyGems.org API client with connection pooling
-func NewClient() *Client {
-	return NewClientWithBaseURL("https://rubygems.org")
+func NewClient(opts ...ClientOption) *Client {
+	return NewClientWithBaseURL("https://rubygems.org", opts...)
 }
 
 // NewClientWithBaseURL creates a client for a custom gem server
-func NewClientWithBaseURL(baseURL string) *Client {
+func NewClientWithBaseURL(baseURL string, opts ...ClientOption) *Client {
 	// Ensure baseURL doesn't end with /
 	if baseURL != "" && baseURL[len(baseURL)-1] == '/' {
 		baseURL = baseURL[:len(baseURL)-1]
@@ -59,12 +70,31 @@ func NewClientWithBaseURL(baseURL string) *Client {
 		ResponseHeaderTimeout: 10 * time.Second,
 	}
 
-	return &Client{
+	c := &Client{
 		baseURL: baseURL + "/api/v1",
 		httpClient: &http.Client{
 			Timeout:   30 * time.Second,
 			Transport: transport,
 		},
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
+}
+
+// applyAuth adds authentication headers to the request if credentials are set.
+func (c *Client) applyAuth(req *http.Request) {
+	if c.credentials == nil {
+		return
+	}
+
+	if c.credentials.IsToken() {
+		req.Header.Set("Authorization", "Bearer "+c.credentials.GetToken())
+	} else if c.credentials.Username != "" {
+		req.SetBasicAuth(c.credentials.Username, c.credentials.Password)
 	}
 }
 
@@ -78,6 +108,7 @@ func (c *Client) GetGemInfo(name, version string) (*GemInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+	c.applyAuth(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -114,6 +145,7 @@ func (c *Client) GetGemVersions(name string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+	c.applyAuth(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

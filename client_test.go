@@ -172,6 +172,55 @@ func TestGetGemVersions_TooManyVersions(t *testing.T) {
 	}
 }
 
+func TestClientWithCredentials_Token(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check Authorization header
+		auth := r.Header.Get("Authorization")
+		if auth != "Bearer test_token_123" {
+			t.Errorf("Expected 'Bearer test_token_123', got %q", auth)
+		}
+
+		response := GemInfo{Name: "test-gem", Version: "1.0.0"}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	creds := &Credentials{Token: "test_token_123"}
+	client := NewClientWithBaseURL(server.URL, WithCredentials(creds))
+
+	_, err := client.GetGemInfo("test-gem", "1.0.0")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+}
+
+func TestClientWithCredentials_BasicAuth(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check Basic Auth
+		user, pass, ok := r.BasicAuth()
+		if !ok {
+			t.Error("Expected Basic Auth to be set")
+		}
+		if user != "myuser" || pass != "mypassword" {
+			t.Errorf("Expected 'myuser:mypassword', got %q:%q", user, pass)
+		}
+
+		response := GemInfo{Name: "test-gem", Version: "1.0.0"}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	creds := &Credentials{Username: "myuser", Password: "mypassword"}
+	client := NewClientWithBaseURL(server.URL, WithCredentials(creds))
+
+	_, err := client.GetGemInfo("test-gem", "1.0.0")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+}
+
 func TestGetMultipleGemInfo(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simple mock that returns different responses based on gem name
