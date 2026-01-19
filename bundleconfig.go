@@ -117,7 +117,7 @@ func (c *BundleConfig) CredentialsForHost(host string) *Credentials {
 func globalBundleConfigPath() string {
 	// Check BUNDLE_USER_HOME first
 	if bundleHome := os.Getenv("BUNDLE_USER_HOME"); bundleHome != "" {
-		return filepath.Join(bundleHome, "config")
+		return filepath.Join(bundleHome, ".bundle", "config")
 	}
 
 	// Fall back to ~/.bundle/config
@@ -164,6 +164,11 @@ func parseBundleConfigYAML(data []byte) map[string]string {
 		if strings.HasPrefix(key, "BUNDLE_") {
 			result[key] = value
 		}
+	}
+
+	// Return empty map on scan error to avoid partial results
+	if err := scanner.Err(); err != nil {
+		return map[string]string{}
 	}
 
 	return result

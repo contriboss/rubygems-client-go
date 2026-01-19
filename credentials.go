@@ -84,11 +84,20 @@ func CredentialsFromEnv(host string) *Credentials {
 // hostToEnvKey converts a hostname to Bundler's env var format.
 // Example: "rubygems.pkg.github.com" → "BUNDLE_RUBYGEMS__PKG__GITHUB__COM"
 func hostToEnvKey(host string) string {
-	// Remove port if present
-	if idx := strings.LastIndex(host, ":"); idx != -1 {
-		// Check if it's actually a port (not part of IPv6)
-		if !strings.Contains(host[idx:], "]") {
-			host = host[:idx]
+	// Remove port if present.
+	// Handle bracketed IPv6 like "[::1]:443" or "[::1]".
+	if strings.HasPrefix(host, "[") {
+		if end := strings.Index(host, "]"); end != -1 {
+			// Extract host without brackets, strip port if present after "]"
+			host = host[1:end]
+		}
+	} else {
+		// Non-bracketed host. Only strip port if exactly one colon (e.g., "example.com:443").
+		// Multiple colons indicate unbracketed IPv6 (e.g., "2001:db8::1") - don't strip.
+		if strings.Count(host, ":") == 1 {
+			if idx := strings.LastIndex(host, ":"); idx != -1 {
+				host = host[:idx]
+			}
 		}
 	}
 
